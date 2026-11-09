@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Application CPM</title>
+<meta name="description" content="Convention pharmacies CPM 2026-2027 : simulations, suivi des conventions, validations.">
+<meta name="theme-color" content="#12324A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CPM">
+<style>
+html, body { margin: 0; height: 100%; background: #12324A; }
+#app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #F3F5F7; padding-top: env(safe-area-inset-top); box-sizing: border-box; }
+#splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: #F7F5F0; font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 24px; background: #12324A; transition: opacity .3s; }
+#splash img { width: 96px; height: 96px; border-radius: 22px; }
+#splash.hide { opacity: 0; pointer-events: none; }
+#splash button { font: inherit; font-weight: 700; padding: 12px 20px; border-radius: 10px; border: 0; background: #F28C28; color: #12324A; min-height: 44px; }
+</style>
+</head>
+<body>
+<iframe id="app" title="Application CPM" allow="camera; clipboard-write" src="about:blank"></iframe>
+<div id="splash" role="status" aria-live="polite">
+<img src="icon-192.png" alt="">
+<div id="sMsg">Chargement de l’application CPM…</div>
+<button type="button" id="retry" hidden>Réessayer</button>
+</div>
+<script>
+// Adresse de l'application Google Apps Script (lien de l'équipe).
+const EXEC = "https://script.google.com/macros/s/AKfycbxqFxGqWm5KlY1lRFaCMrWukm8gRqxWW5JtkNYtxxq_bHq3ziwCfZ_ae3kxdqLU7iYwrQ/exec";
+const frame = document.getElementById("app"), splash = document.getElementById("splash"), msg = document.getElementById("sMsg"), retry = document.getElementById("retry");
+const withPwa = (u) => u + (u.indexOf("?") < 0 ? "?" : "&") + "pwa=1";
+function open(u) {
+  if (!navigator.onLine) { msg.textContent = "Pas de réseau. Reconnectez-vous puis touchez Réessayer."; retry.hidden = false; splash.classList.remove("hide"); return; }
+  retry.hidden = true; msg.textContent = "Chargement de l’application CPM…"; splash.classList.remove("hide");
+  frame.src = u;
+}
+frame.addEventListener("load", () => { if (frame.src !== "about:blank") setTimeout(() => splash.classList.add("hide"), 400); });
+// L'application demande d'ouvrir le simulateur ou de revenir : on reste dans la fenêtre installée.
+window.addEventListener("message", (e) => {
+  const d = e.data;
+  if (!d || d.cpm !== "nav" || typeof d.url !== "string") return;
+  if (!/^https:\/\/[^/]*\.googleusercontent\.com$/.test(e.origin) && e.origin !== "https://script.google.com") return;
+  if (d.url.indexOf(EXEC) !== 0) return;
+  open(d.url.indexOf("pwa=1") < 0 ? withPwa(d.url) : d.url);
+});
+retry.addEventListener("click", () => open(withPwa(EXEC)));
+window.addEventListener("online", () => { if (!retry.hidden) open(withPwa(EXEC)); });
+open(withPwa(EXEC));
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
